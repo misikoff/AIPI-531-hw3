@@ -1,6 +1,13 @@
+# misc
 **.DS_STORE
+
+# python
+**.pyc
+**/__pycache__
+
+# drive
 *.tmp.driveupload
 *.tmp.drivedownload
-**/__pycache__/*
-Kaggle/data/**/*
-RC15/data/**/*
+
+Kaggle/data
+RC15/data
