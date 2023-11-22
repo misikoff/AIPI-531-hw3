@@ -9,5 +9,5 @@
 *.tmp.driveupload
 *.tmp.drivedownload
 
+# data files are too large to store in GitHub
 Kaggle/data
-RC15/data
