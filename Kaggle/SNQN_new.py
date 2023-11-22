@@ -47,6 +47,8 @@ def parse_args():
     parser.add_argument('--num_heads', default=1, type=int,help='number heads (for SASRec)')
     parser.add_argument('--num_blocks', default=1, type=int, help='number heads (for SASRec)')
     parser.add_argument('--dropout_rate', default=0.1, type=float)
+    parser.add_argument('--features', type=int, default=0,
+                        help='flag for features. 1: with item features; 0: without item features')
 
 
     return parser.parse_args()
@@ -206,7 +208,15 @@ class QNetwork:
 
             self.output1 = tf.compat.v1.layers.dense(self.states_hidden, self.item_num, activation=None)  # all q-values
             
-            self.output2= tf.compat.v1.layers.dense(self.states_hidden, self.item_num, activation=None)  # all ce logits
+            print(args.features)
+            if args.features == 1:
+                # with item features
+                print("with item features")
+                self.output2 = tf.compat.v1.layers.dense(self.states_hidden, self.item_num, name="ce-logits-2")  # all ce logits
+            else:
+                # without item features
+                print("without item features")
+                self.output2 = tf.compat.v1.layers.dense(self.states_hidden, self.item_num, name="ce-logits-1")  # all ce logits
 
             # TRFL way
             self.actions = tf.compat.v1.placeholder(tf.int32, [None])
