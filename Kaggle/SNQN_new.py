@@ -48,20 +48,22 @@ def parse_args():
     parser.add_argument('--num_blocks', default=1, type=int, help='number heads (for SASRec)')
     parser.add_argument('--dropout_rate', default=0.1, type=float)
     parser.add_argument('--features', type=int, default=0,
-                        help='flag for features. 1: with item features; 0: without item features')
+                        help='flag for features. 1: use item features; 0: do not use item features')
 
 
     return parser.parse_args()
 
 
 class QNetwork:
-    def __init__(self, hidden_size, learning_rate, item_num, state_size, pretrain, name='DQNetwork'):
+    def __init__(self, hidden_size, learning_rate, item_num, state_size, pretrain, features, use_features=False, name='DQNetwork'):
         tf.compat.v1.disable_eager_execution()
         self.state_size = state_size
         self.learning_rate = learning_rate
         self.hidden_size = hidden_size
         self.item_num = int(item_num)
         self.pretrain = pretrain
+        self.features = features
+        self.use_features = use_features
         self.neg=args.neg
         self.weight=args.weight
         self.model=args.model
@@ -208,15 +210,15 @@ class QNetwork:
 
             self.output1 = tf.compat.v1.layers.dense(self.states_hidden, self.item_num, activation=None)  # all q-values
             
-            print(args.features)
-            if args.features == 1:
+            if self.use_features:
                 # with item features
-                print("with item features")
-                self.output2 = tf.compat.v1.layers.dense(self.states_hidden, self.item_num, name="ce-logits-2")  # all ce logits
+                print("with item features")                
+                res = tf.compat.v1.layers.dense(self.features, self.hidden_size, name="ce-logits") # all ce logits
+                self.output2 = tf.matmul(self.states_hidden, res, transpose_b=True)
             else:
                 # without item features
                 print("without item features")
-                self.output2 = tf.compat.v1.layers.dense(self.states_hidden, self.item_num, name="ce-logits-1")  # all ce logits
+                self.output2 = tf.compat.v1.layers.dense(self.states_hidden, self.item_num, name="ce-logits") # all ce logits
 
             # TRFL way
             self.actions = tf.compat.v1.placeholder(tf.int32, [None])
@@ -343,10 +345,21 @@ if __name__ == '__main__':
     # save_file = 'pretrain-GRU/%d' % (hidden_size)
 
     tf.compat.v1.reset_default_graph()
-
-    QN_1 = QNetwork(name='QN_1', hidden_size=args.hidden_factor, learning_rate=args.lr, item_num=item_num,
+    
+    if args.features == 1:
+        print("with item features")
+        item_features = pd.read_csv(os.path.join(data_directory, 'item_properties.csv'))
+        item_features = item_features.to_numpy(dtype=np.float32)
+        
+        QN_1 = QNetwork(name='QN_1', hidden_size=args.hidden_factor, learning_rate=args.lr, item_num=item_num,
+                    state_size=state_size, pretrain=False, features=item_features, use_features=True)
+        QN_2 = QNetwork(name='QN_2', hidden_size=args.hidden_factor, learning_rate=args.lr, item_num=item_num,
+                    state_size=state_size, pretrain=False, features=item_features, use_features=True)
+    else:
+        print("without item features")
+        QN_1 = QNetwork(name='QN_1', hidden_size=args.hidden_factor, learning_rate=args.lr, item_num=item_num,
                     state_size=state_size, pretrain=False)
-    QN_2 = QNetwork(name='QN_2', hidden_size=args.hidden_factor, learning_rate=args.lr, item_num=item_num,
+        QN_2 = QNetwork(name='QN_2', hidden_size=args.hidden_factor, learning_rate=args.lr, item_num=item_num,
                     state_size=state_size, pretrain=False)
 
     replay_buffer = pd.read_pickle(os.path.join(data_directory, 'replay_buffer.df'))
