@@ -4,6 +4,7 @@
 # python
 **.pyc
 **/__pycache__
+**/.ipynb_checkpoints
 
 # drive
 *.tmp.driveupload
@@ -11,3 +12,4 @@
 
 # data files are too large to store in GitHub
 Kaggle/data
+data/
